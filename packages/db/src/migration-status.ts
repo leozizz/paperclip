@@ -54,7 +54,9 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((error) => {
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
   const err = toError(error, "Migration status check failed");
   process.stderr.write(`${err.stack ?? err.message}\n`);
   process.exit(1);
