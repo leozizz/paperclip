@@ -1,6 +1,10 @@
-import {
-  type AdapterModelProfileDefinition,
-} from "@paperclipai/adapter-utils";
+export interface AdapterModelProfileDefinition {
+  key: string;
+  label: string;
+  description: string;
+  adapterConfig: Record<string, unknown>;
+  source: string;
+}
 
 export const type = "antigravity_local";
 export const label = "Antigravity CLI (local)";

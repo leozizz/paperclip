@@ -11,7 +11,7 @@ import {
   ensurePaperclipSkillSymlink,
   readPaperclipRuntimeSkillEntries,
   readInstalledSkillTargets,
-  resolvePaperclipDesiredSkillNames,
+  resolveLegacyPaperclipDesiredSkillNames,
 } from "@paperclipai/adapter-utils/server-utils";
 
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
@@ -32,7 +32,7 @@ function resolveAntigravitySkillsHome(config: Record<string, unknown>) {
 
 async function buildAntigravitySkillSnapshot(config: Record<string, unknown>): Promise<AdapterSkillSnapshot> {
   const availableEntries = await readPaperclipRuntimeSkillEntries(config, __moduleDir);
-  const desiredSkills = resolvePaperclipDesiredSkillNames(config, availableEntries);
+  const desiredSkills = resolveLegacyPaperclipDesiredSkillNames(config, availableEntries);
   const skillsHome = resolveAntigravitySkillsHome(config);
   const installed = await readInstalledSkillTargets(skillsHome);
   return buildPersistentSkillSnapshot({
@@ -58,8 +58,8 @@ export async function syncAntigravitySkills(
 ): Promise<AdapterSkillSnapshot> {
   const availableEntries = await readPaperclipRuntimeSkillEntries(ctx.config, __moduleDir);
   const desiredSet = new Set([
+    ...resolveLegacyPaperclipDesiredSkillNames({}, availableEntries),
     ...desiredSkills,
-    ...availableEntries.filter((entry) => entry.required).map((entry) => entry.key),
   ]);
   const skillsHome = resolveAntigravitySkillsHome(ctx.config);
   await fs.mkdir(skillsHome, { recursive: true });
@@ -87,5 +87,5 @@ export function resolveAntigravityDesiredSkillNames(
   config: Record<string, unknown>,
   availableEntries: Array<{ key: string; required?: boolean }>,
 ) {
-  return resolvePaperclipDesiredSkillNames(config, availableEntries);
+  return resolveLegacyPaperclipDesiredSkillNames(config, availableEntries);
 }
