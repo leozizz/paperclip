@@ -172,7 +172,8 @@ export function detectAntigravityAuthRequired(input: {
   stdout: string;
   stderr: string;
 }): { requiresAuth: boolean } {
-  const combined = `${input.stdout}\n${input.stderr}`;
+  const sanitized = input.stdout ? input.stdout.replace(/"(response|text|text_delta)":\s*"[\s\S]*?"/g, "") : "";
+  const combined = `${sanitized}\n${input.stderr}`;
   const requiresAuth = ANTIGRAVITY_AUTH_REQUIRED_RE.test(combined);
   return { requiresAuth };
 }
