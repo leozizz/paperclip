@@ -94,46 +94,35 @@ async function ensureEmbeddedPostgresConnection(
 ): Promise<MigrationConnection> {
   const EmbeddedPostgres = await loadEmbeddedPostgresCtor();
   await prepareEmbeddedPostgresNativeRuntime();
-  const selectedPort = await findAvailablePort(preferredPort);
   const postmasterPidFile = path.resolve(dataDir, "postmaster.pid");
   const pgVersionFile = path.resolve(dataDir, "PG_VERSION");
   const runningPid = readRunningPostmasterPid(postmasterPidFile);
   const runningPort = readPidFilePort(postmasterPidFile);
-  const preferredAdminConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${preferredPort}/postgres`;
+  const selectedPort = runningPort ?? preferredPort;
+  const preferredAdminConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${selectedPort}/postgres`;
   const logBuffer = createEmbeddedPostgresLogBuffer();
 
-  if (!runningPid && existsSync(pgVersionFile)) {
-    try {
-      const actualDataDir = await getPostgresDataDirectory(preferredAdminConnectionString);
-      const matchesDataDir =
-        typeof actualDataDir === "string" &&
-        path.resolve(actualDataDir).toLowerCase() === path.resolve(dataDir).toLowerCase();
-      if (!matchesDataDir) {
-        throw new Error("reachable postgres does not use the expected embedded data directory");
+  const portActive = await isPortInUse(selectedPort);
+  if (portActive || runningPid) {
+    for (let attempt = 0; attempt < 10; attempt += 1) {
+      try {
+        const actualDataDir = await getPostgresDataDirectory(preferredAdminConnectionString);
+        const matchesDataDir =
+          typeof actualDataDir === "string" &&
+          path.resolve(actualDataDir).toLowerCase() === path.resolve(dataDir).toLowerCase();
+        if (matchesDataDir) {
+          await ensurePostgresDatabase(preferredAdminConnectionString, "paperclip");
+          return {
+            connectionString: `postgres://paperclip:paperclip@127.0.0.1:${selectedPort}/paperclip`,
+            source: `embedded-postgres@${selectedPort}`,
+            stop: async () => {},
+          };
+        }
+      } catch {
+        // waiting for postgres to finish startup and accept connections
       }
-      await ensurePostgresDatabase(preferredAdminConnectionString, "paperclip");
-      process.emitWarning(
-        `Adopting an existing PostgreSQL instance on port ${preferredPort} for embedded data dir ${dataDir} because postmaster.pid is missing.`,
-      );
-      return {
-        connectionString: `postgres://paperclip:paperclip@127.0.0.1:${preferredPort}/paperclip`,
-        source: `embedded-postgres@${preferredPort}`,
-        stop: async () => {},
-      };
-    } catch {
-      // Fall through and attempt to start the configured embedded cluster.
+      await new Promise((r) => setTimeout(r, 250));
     }
-  }
-
-  if (runningPid) {
-    const port = runningPort ?? preferredPort;
-    const adminConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${port}/postgres`;
-    await ensurePostgresDatabase(adminConnectionString, "paperclip");
-    return {
-      connectionString: `postgres://paperclip:paperclip@127.0.0.1:${port}/paperclip`,
-      source: `embedded-postgres@${port}`,
-      stop: async () => {},
-    };
   }
 
   const instance = new EmbeddedPostgres({
