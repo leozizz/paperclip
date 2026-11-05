@@ -107,7 +107,7 @@ async function ensureEmbeddedPostgresConnection(
       const actualDataDir = await getPostgresDataDirectory(preferredAdminConnectionString);
       const matchesDataDir =
         typeof actualDataDir === "string" &&
-        path.resolve(actualDataDir) === path.resolve(dataDir);
+        path.resolve(actualDataDir).toLowerCase() === path.resolve(dataDir).toLowerCase();
       if (!matchesDataDir) {
         throw new Error("reachable postgres does not use the expected embedded data directory");
       }
