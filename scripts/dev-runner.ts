@@ -241,6 +241,7 @@ if (existingRunner) {
 }
 
 const pnpmBin = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+const tsxBin = process.platform === "win32" ? "tsx.cmd" : "tsx";
 let previousSnapshot = collectWatchedSnapshot();
 let dirtyPaths = new Set<string>();
 let pendingMigrations: string[] = [];
@@ -413,7 +414,7 @@ async function runPnpm(args: string[], options: {
 
 async function getMigrationStatusPayload() {
   const status = await runPnpm(
-    ["--silent", "--filter", "@paperclipai/db", "exec", "tsx", "src/migration-status.ts", "--json"],
+    ["--silent", "--filter", "@paperclipai/db", "exec", tsxBin, "src/migration-status.ts", "--json"],
     { env },
   );
   if (status.code !== 0) {
@@ -538,7 +539,7 @@ async function getNativeRunnerRequired(): Promise<boolean> {
       "--filter",
       "@paperclipai/server",
       "exec",
-      "tsx",
+      tsxBin,
       "src/dev-native-runner-status.ts",
     ],
     { env },
