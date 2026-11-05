@@ -533,7 +533,7 @@ async function startServerWithDatabaseTeardown(
     if (runningPid) {
       port = embeddedPostgresOwnerPort(readFileSync(postmasterPidFile, "utf8"), dataDir, runningPid);
       const actualDataDir = await getPostgresDataDirectory(`postgres://paperclip:paperclip@127.0.0.1:${port}/postgres`);
-      if (typeof actualDataDir !== "string" || resolve(actualDataDir) !== resolve(dataDir)) {
+      if (typeof actualDataDir !== "string" || resolve(actualDataDir).toLowerCase() !== resolve(dataDir).toLowerCase()) {
         throw new Error("Refusing to reuse PostgreSQL: its data directory belongs to another instance.");
       }
       logger.warn(`Embedded PostgreSQL already running; reusing existing process (pid=${runningPid}, port=${port})`);
@@ -543,7 +543,7 @@ async function startServerWithDatabaseTeardown(
         const actualDataDir = await getPostgresDataDirectory(configuredAdminConnectionString);
         if (
           typeof actualDataDir !== "string" ||
-          resolve(actualDataDir) !== resolve(dataDir)
+          resolve(actualDataDir).toLowerCase() !== resolve(dataDir).toLowerCase()
         ) {
           throw new Error("reachable postgres does not use the expected embedded data directory");
         }
