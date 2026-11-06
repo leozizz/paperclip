@@ -77,7 +77,7 @@ export async function syncAntigravitySkills(
     if (!available) continue;
     if (desiredSet.has(available.key)) continue;
     if (installedEntry.targetPath !== available.source) continue;
-    await fs.unlink(path.join(skillsHome, name)).catch(() => {});
+    await fs.unlink(path.join(skillsHome, name)).catch(() => fs.rm(path.join(skillsHome, name), { recursive: true, force: true }));
   }
 
   return buildAntigravitySkillSnapshot(ctx.config);
