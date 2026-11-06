@@ -530,14 +530,24 @@ async function startServerWithDatabaseTeardown(
     };
   
     const runningPid = getRunningPid();
+    let reusedRunningInstance = false;
     if (runningPid) {
-      port = embeddedPostgresOwnerPort(readFileSync(postmasterPidFile, "utf8"), dataDir, runningPid);
-      const actualDataDir = await getPostgresDataDirectory(`postgres://paperclip:paperclip@127.0.0.1:${port}/postgres`);
-      if (typeof actualDataDir !== "string" || resolve(actualDataDir).toLowerCase() !== resolve(dataDir).toLowerCase()) {
-        throw new Error("Refusing to reuse PostgreSQL: its data directory belongs to another instance.");
+      try {
+        port = embeddedPostgresOwnerPort(readFileSync(postmasterPidFile, "utf8"), dataDir, runningPid);
+        const actualDataDir = await getPostgresDataDirectory(`postgres://paperclip:paperclip@127.0.0.1:${port}/postgres`);
+        if (typeof actualDataDir === "string" && resolve(actualDataDir).toLowerCase() === resolve(dataDir).toLowerCase()) {
+          logger.warn(`Embedded PostgreSQL already running; reusing existing process (pid=${runningPid}, port=${port})`);
+          reusedRunningInstance = true;
+        } else {
+          logger.warn(`postmaster.pid exists (pid=${runningPid}) but PostgreSQL data directory does not match or is unreachable; removing stale pid file`);
+          if (existsSync(postmasterPidFile)) rmSync(postmasterPidFile, { force: true });
+        }
+      } catch {
+        logger.warn("postmaster.pid exists but PostgreSQL is unreachable; removing stale pid file");
+        if (existsSync(postmasterPidFile)) rmSync(postmasterPidFile, { force: true });
       }
-      logger.warn(`Embedded PostgreSQL already running; reusing existing process (pid=${runningPid}, port=${port})`);
-    } else {
+    }
+    if (!reusedRunningInstance) {
       const configuredAdminConnectionString = `postgres://paperclip:paperclip@127.0.0.1:${configuredPort}/postgres`;
       try {
         const actualDataDir = await getPostgresDataDirectory(configuredAdminConnectionString);
