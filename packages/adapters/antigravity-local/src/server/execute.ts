@@ -56,6 +56,24 @@ import {
 } from "./parse.js";
 
 const __moduleDir = path.dirname(fileURLToPath(import.meta.url));
+export const MAX_ANTIGRAVITY_CLI_PROMPT_CHARS = process.platform === "win32" ? 6_000 : 64_000;
+
+export async function prepareAntigravityCliPrompt(
+  prompt: string,
+  maxInlineChars = MAX_ANTIGRAVITY_CLI_PROMPT_CHARS,
+): Promise<{ cliPrompt: string; tempPromptDir: string | null; offloadedFile: string | null }> {
+  if (prompt.length <= maxInlineChars) {
+    return { cliPrompt: prompt, tempPromptDir: null, offloadedFile: null };
+  }
+  const tempPromptDir = await fs.mkdtemp(path.join(os.tmpdir(), "paperclip-antigravity-prompt-"));
+  const offloadedFile = path.join(tempPromptDir, "prompt.md");
+  await fs.writeFile(offloadedFile, prompt, "utf8");
+  return {
+    cliPrompt: `Read and follow every instruction in "${offloadedFile}" as your complete task prompt for this run. Start by reading that file in full before taking any other action.`,
+    tempPromptDir,
+    offloadedFile,
+  };
+}
 
 function antigravitySkillsHome(): string {
   return path.join(os.homedir(), ".gemini", "skills");
@@ -449,6 +467,13 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
   const mode = asString(config.mode, "").trim();
   const agentRole = asString(config.agent, "").trim();
 
+  const preparedCliPrompt = await prepareAntigravityCliPrompt(prompt);
+  if (preparedCliPrompt.offloadedFile) {
+    commandNotes.push(
+      `Prompt (${prompt.length} chars) exceeded CLI limit; offloaded to ${preparedCliPrompt.offloadedFile}.`,
+    );
+  }
+
   const buildArgs = (resumeSessionId: string | null) => {
     const args: string[] = [];
     if (!extraArgs.includes("--output-format")) {
@@ -478,7 +503,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
     }
 
     // Antigravity CLI uses --prompt/--print option to run a single prompt
-    args.push("--prompt", prompt);
+    args.push("--prompt", preparedCliPrompt.cliPrompt);
     return args;
   };
 
@@ -638,6 +663,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       paperclipBridge?.stop(),
       restoreRemoteWorkspace?.(),
       localSkillsDir ? fs.rm(path.dirname(localSkillsDir), { recursive: true, force: true }).catch(() => undefined) : Promise.resolve(),
+      preparedCliPrompt.tempPromptDir ? fs.rm(preparedCliPrompt.tempPromptDir, { recursive: true, force: true }).catch(() => undefined) : Promise.resolve(),
     ]);
   }
 }
