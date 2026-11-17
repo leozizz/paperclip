@@ -3,6 +3,7 @@ import type { Db } from "@paperclipai/db";
 import { agents, approvals, companies, costEvents, heartbeatRuns, issues } from "@paperclipai/db";
 import { notFound } from "../errors.js";
 import { budgetService } from "./budgets.js";
+import { estimateAntigravityCostCents } from "./antigravity-pricing.js";
 import { executionIssueCondition } from "./issue-visibility.js";
 import { retryIdempotentDatabaseOperation } from "../database-retry.js";
 
@@ -87,9 +88,15 @@ export function dashboardService(db: Db) {
       const monthStart = getUtcMonthStart(now);
       const runActivityDays = getRecentUtcDateKeys(now, DASHBOARD_RUN_ACTIVITY_DAYS);
       const runActivityStart = new Date(`${runActivityDays[0]}T00:00:00.000Z`);
-      const [{ monthSpend }] = await retryIdempotentDatabaseOperation(() => db
+      const costRows = await retryIdempotentDatabaseOperation(() => db
         .select({
+          model: costEvents.model,
+          costStatus: costEvents.costStatus,
           monthSpend: sql<number>`coalesce(sum(${costEvents.costCents}), 0)::double precision`,
+          inputTokens: sql<number>`coalesce(sum(${costEvents.inputTokens}), 0)::double precision`,
+          cachedInputTokens: sql<number>`coalesce(sum(${costEvents.cachedInputTokens}), 0)::double precision`,
+          outputTokens: sql<number>`coalesce(sum(${costEvents.outputTokens}), 0)::double precision`,
+          eventCount: sql<number>`count(*)::int`,
         })
         .from(costEvents)
         .where(
@@ -98,9 +105,40 @@ export function dashboardService(db: Db) {
             gte(costEvents.occurredAt, monthStart),
             lte(costEvents.occurredAt, now),
           ),
-        ));
+        )
+        .groupBy(costEvents.model, costEvents.costStatus));
 
-      const monthSpendCents = Number(monthSpend);
+      let monthSpendCents = 0;
+      let monthEstimatedSpendCents = 0;
+      let monthInputTokens = 0;
+      let monthCachedInputTokens = 0;
+      let monthOutputTokens = 0;
+      let unpricedEventCount = 0;
+
+      for (const row of costRows) {
+        const spend = Number(row.monthSpend ?? 0);
+        const input = Number(row.inputTokens ?? 0);
+        const cached = Number(row.cachedInputTokens ?? 0);
+        const output = Number(row.outputTokens ?? 0);
+        monthSpendCents += spend;
+        monthInputTokens += input;
+        monthCachedInputTokens += cached;
+        monthOutputTokens += output;
+        if (row.costStatus === "unpriced") {
+          unpricedEventCount += Number(row.eventCount ?? 0);
+          monthEstimatedSpendCents +=
+            spend > 0
+              ? spend
+              : estimateAntigravityCostCents(row.model, {
+                  inputTokens: input,
+                  cachedInputTokens: cached,
+                  outputTokens: output,
+                });
+        } else {
+          monthEstimatedSpendCents += spend;
+        }
+      }
+      const monthTotalTokens = monthInputTokens + monthCachedInputTokens + monthOutputTokens;
       // Per-day run breakdown. A run is "recovered" when its retry chain later
       // succeeded (recovered_runs = all ancestors of a succeeded retry), so a
       // restart-killed run whose retry succeeded is pulled out of the headline
@@ -202,6 +240,12 @@ export function dashboardService(db: Db) {
           monthSpendCents,
           monthBudgetCents: company.budgetMonthlyCents,
           monthUtilizationPercent: Number(utilization.toFixed(2)),
+          monthInputTokens,
+          monthCachedInputTokens,
+          monthOutputTokens,
+          monthTotalTokens,
+          monthEstimatedSpendCents,
+          unpricedEventCount,
         },
         pendingApprovals,
         budgets: {

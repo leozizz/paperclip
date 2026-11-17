@@ -26,7 +26,7 @@ import { usePublishSharedQueryData, useSharedPollingQuery } from "../hooks/useSh
 
 import { ActivityRow } from "../components/ActivityRow";
 import { timeAgo } from "../lib/timeAgo";
-import { cn, formatCents } from "../lib/utils";
+import { cn, formatCents, formatTokens } from "../lib/utils";
 import { SHOW_TASK_PRIORITY_UI } from "../lib/ui-flags";
 import { Bot, CircleDot, DollarSign, ShieldCheck, LayoutDashboard, PauseCircle } from "lucide-react";
 import { ActiveAgentsPanel } from "../components/ActiveAgentsPanel";
@@ -38,6 +38,7 @@ import { InlineBanner } from "../components/InlineBanner";
 import type { Agent, Issue } from "@paperclipai/shared";
 import { PluginSlotOutlet } from "@/plugins/slots";
 import { SmokeLabDashboardCard } from "../components/SmokeLabDashboardCard";
+import { AntigravityQuotaCard } from "../components/AntigravityQuotaCard";
 
 const DASHBOARD_ACTIVITY_LIMIT = 10;
 
@@ -425,7 +426,13 @@ export function Dashboard() {
             />
             <MetricCard
               icon={DollarSign}
-              value={formatCents(data.costs.monthSpendCents)}
+              value={
+                data.costs.monthSpendCents > 0
+                  ? formatCents(data.costs.monthSpendCents)
+                  : (data.costs.monthEstimatedSpendCents ?? 0) > 0
+                    ? `~${formatCents(data.costs.monthEstimatedSpendCents ?? 0)}`
+                    : formatCents(0)
+              }
               label="Month Spend"
               to="/costs"
               description={
@@ -433,6 +440,9 @@ export function Dashboard() {
                   {data.costs.monthBudgetCents > 0
                     ? `${data.costs.monthUtilizationPercent}% of ${formatCents(data.costs.monthBudgetCents)} budget`
                     : "Unlimited budget"}
+                  {(data.costs.monthTotalTokens ?? 0) > 0
+                    ? ` · ${formatTokens(data.costs.monthTotalTokens ?? 0)} tokens`
+                    : ""}
                 </span>
               }
             />
@@ -452,6 +462,8 @@ export function Dashboard() {
           </div>
 
           <SmokeLabDashboardCard companyId={selectedCompanyId!} />
+
+          <AntigravityQuotaCard companyId={selectedCompanyId!} costs={data.costs} />
 
           <div className={cn("grid grid-cols-2 gap-4", SHOW_TASK_PRIORITY_UI ? "lg:grid-cols-4" : "lg:grid-cols-3")}>
             <ChartCard title="Run Activity" subtitle="Last 14 days">

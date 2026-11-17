@@ -1,11 +1,3 @@
-export interface AdapterModelProfileDefinition {
-  key: string;
-  label: string;
-  description: string;
-  adapterConfig: Record<string, unknown>;
-  source: string;
-}
-
 export const type = "antigravity_local";
 export const label = "Antigravity CLI (local)";
 
@@ -20,6 +12,13 @@ export const models = [
   { id: "gemini-4-argon-high", label: "Gemini 4 Argon (High)" },
   { id: "gemini-4-argon-medium", label: "Gemini 4 Argon (Medium)" },
   { id: "gemini-4-argon-low", label: "Gemini 4 Argon (Low)" },
+  // Gemini 4 Hydrogen family
+  { id: "gemini-4-hydrogen-xhigh", label: "Gemini 4 Hydrogen (XHigh)" },
+  { id: "gemini-4-hydrogen-high", label: "Gemini 4 Hydrogen (High)" },
+  { id: "gemini-4-hydrogen-medium", label: "Gemini 4 Hydrogen (Medium)" },
+  { id: "gemini-4-hydrogen-low", label: "Gemini 4 Hydrogen (Low)" },
+  // Orchestrator
+  { id: "gemini-pro-orchestrator-g1-pro", label: "Orchestrator (Argon)" },
   // Gemini 3.8 Flash family
   { id: "gemini-3.8-flash-high", label: "Gemini 3.8 Flash (High)" },
   { id: "gemini-3.8-flash-medium", label: "Gemini 3.8 Flash (Medium)" },
@@ -41,18 +40,6 @@ export const models = [
   { id: "Gemini 3.1 Pro (High)", label: "Gemini 3.1 Pro (High)" },
   { id: "Claude Sonnet 4.6 (Thinking)", label: "Claude Sonnet 4.6 (Thinking)" },
   { id: "Claude Opus 4.6 (Thinking)", label: "Claude Opus 4.6 (Thinking)" },
-];
-
-export const modelProfiles: AdapterModelProfileDefinition[] = [
-  {
-    key: "cheap",
-    label: "Cheap",
-    description: "Use Gemini 3.8 Flash (Low) as the lower-cost Antigravity CLI lane.",
-    adapterConfig: {
-      model: "gemini-3.8-flash-low",
-    },
-    source: "adapter_default",
-  },
 ];
 
 export const agentConfigurationDoc = `# antigravity_local agent configuration

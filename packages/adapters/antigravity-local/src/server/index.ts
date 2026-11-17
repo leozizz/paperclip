@@ -2,6 +2,15 @@ export { execute } from "./execute.js";
 export { listAntigravitySkills, syncAntigravitySkills } from "./skills.js";
 export { testEnvironment } from "./test.js";
 export {
+  listAntigravityModels,
+  parseAntigravityModelsOutput,
+  fetchAntigravityUsage,
+  parseAntigravityUsageOutput,
+  type AntigravityQuotaBucket,
+  type AntigravityQuotaGroup,
+  type AntigravityUsageSnapshot,
+} from "./models.js";
+export {
   parseAntigravityOutput,
   isAntigravityUnknownSessionError,
   describeAntigravityFailure,

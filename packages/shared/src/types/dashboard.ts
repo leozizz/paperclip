@@ -42,6 +42,12 @@ export interface DashboardSummary {
     monthSpendCents: number;
     monthBudgetCents: number;
     monthUtilizationPercent: number;
+    monthInputTokens?: number;
+    monthCachedInputTokens?: number;
+    monthOutputTokens?: number;
+    monthTotalTokens?: number;
+    monthEstimatedSpendCents?: number;
+    unpricedEventCount?: number;
   };
   pendingApprovals: number;
   budgets: {
@@ -51,4 +57,28 @@ export interface DashboardSummary {
     pausedProjects: number;
   };
   runActivity: DashboardRunActivityDay[];
+}
+
+export interface AntigravityQuotaBucket {
+  id: string;
+  name: string;
+  description?: string;
+  window: string;
+  remainingFraction: number;
+  remainingPercent: number;
+  resetTime: string | null;
+}
+
+export interface AntigravityQuotaGroup {
+  name: string;
+  description?: string;
+  buckets: AntigravityQuotaBucket[];
+}
+
+export interface AntigravityUsageResponse {
+  ok: boolean;
+  capturedAt: string;
+  description?: string;
+  groups: AntigravityQuotaGroup[];
+  error?: string;
 }
