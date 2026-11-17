@@ -73,6 +73,7 @@ import {
 } from "@paperclipai/adapter-gemini-local";
 import {
   execute as antigravityExecute,
+  listAntigravityModels,
   listAntigravitySkills,
   syncAntigravitySkills,
   testEnvironment as antigravityTestEnvironment,
@@ -790,6 +791,7 @@ const antigravityLocalAdapter: ServerAdapterModule = {
   sessionCodec: antigravitySessionCodec,
   sessionManagement: getAdapterSessionManagement("antigravity_local") ?? undefined,
   models: antigravityModels,
+  listModels: listAntigravityModels,
   supportsLocalAgentJwt: true,
   supportsInstructionsBundle: true,
   requiresMaterializedRuntimeSkills: true,

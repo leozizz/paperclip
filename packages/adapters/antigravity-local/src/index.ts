@@ -12,6 +12,13 @@ export const models = [
   { id: "gemini-4-argon-high", label: "Gemini 4 Argon (High)" },
   { id: "gemini-4-argon-medium", label: "Gemini 4 Argon (Medium)" },
   { id: "gemini-4-argon-low", label: "Gemini 4 Argon (Low)" },
+  // Gemini 4 Hydrogen family
+  { id: "gemini-4-hydrogen-xhigh", label: "Gemini 4 Hydrogen (XHigh)" },
+  { id: "gemini-4-hydrogen-high", label: "Gemini 4 Hydrogen (High)" },
+  { id: "gemini-4-hydrogen-medium", label: "Gemini 4 Hydrogen (Medium)" },
+  { id: "gemini-4-hydrogen-low", label: "Gemini 4 Hydrogen (Low)" },
+  // Orchestrator
+  { id: "gemini-pro-orchestrator-g1-pro", label: "Orchestrator (Argon)" },
   // Gemini 3.8 Flash family
   { id: "gemini-3.8-flash-high", label: "Gemini 3.8 Flash (High)" },
   { id: "gemini-3.8-flash-medium", label: "Gemini 3.8 Flash (Medium)" },

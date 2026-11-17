@@ -603,6 +603,7 @@ export async function execute(ctx: AdapterExecutionContext): Promise<AdapterExec
       sessionDisplayId: resolvedSessionId,
       provider: "google",
       biller: "google",
+      billingType: "metered_api",
       model,
       costUsd: attempt.parsed.costUsd,
       resultJson: {

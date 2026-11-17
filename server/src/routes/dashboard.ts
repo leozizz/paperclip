@@ -1,5 +1,6 @@
 import { Router } from "express";
 import type { Db } from "@paperclipai/db";
+import { fetchAntigravityUsage } from "@paperclipai/adapter-antigravity-local/server";
 import { dashboardService } from "../services/dashboard.js";
 import {
   DEFAULT_RECOVERY_RATE_THRESHOLD_PERCENT,
@@ -29,6 +30,14 @@ export function dashboardRoutes(db: Db) {
     assertCompanyAccess(req, companyId);
     const summary = await svc.summary(companyId);
     res.json(summary);
+  });
+
+  router.get("/companies/:companyId/antigravity/usage", async (req, res) => {
+    const companyId = req.params.companyId as string;
+    assertCompanyAccess(req, companyId);
+    const forceRefresh = req.query.refresh === "1" || req.query.refresh === "true";
+    const usage = await fetchAntigravityUsage({ forceRefresh });
+    res.json(usage);
   });
 
   router.get("/companies/:companyId/recovery-observability", async (req, res) => {
